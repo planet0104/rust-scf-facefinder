@@ -1,0 +1,91 @@
+<!DOCTYPE html> 
+
+<html>  
+   <head> 
+      <meta charset = "utf-8"> 
+      <title>scf facefinder</title>
+      <script src="key.js"></script>
+   </head>
+  
+   <body>
+        <div>
+            <input style="font-size: 40px;" type="file" id="imagefile" />
+            <input style="font-size: 40px;" type="button" value="检测人脸" onClick="readAsDataURL();" />
+        </div>
+        <canvas style="border:solid 5px #ddd;" id="myCanvas"></canvas>
+        <script src="crypto-js.min.js"></script>
+        <script>
+
+            var canvas = document.querySelector('#myCanvas');
+            var ctx = canvas.getContext('2d');
+
+            function readAsDataURL(){
+                var file=document.getElementById("imagefile").files[0];
+                var reader=new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload=function(e)
+                {
+                    var base64 = this.result
+                        .replace('data:image/png;base64,', '')
+                        .replace('data:image/jpg;base64,', '');
+
+                    var data = {
+                        img: base64,
+                        min_size: 60,
+                        shift_factor: 0.1,
+                        threshold: 0.2
+                    };
+
+                    fetch(url,{
+                        method: 'POST',
+                        body: JSON.stringify(data),
+                        headers: getHeader()
+                    }).then(res => {
+                        res.json().then(faces => {
+                            if(!faces || faces.length == 0){
+                                alert('没有检测到人脸！');
+                            }else{
+                                ctx.strokeStyle="blue";
+                                ctx.lineWidth = 2;
+                                faces.forEach(face => {
+                                    ctx.strokeRect(face.rect.left, face.rect.top, face.rect.width, face.rect.height);
+                                });
+                            }
+                        });
+                    }).catch(res => {
+                        console.log('请求失败:',res);
+                        alert('请求失败');
+                    });
+                }
+            }
+
+            function getHeader(){
+                var nowDate = new Date();
+                var dateTime = nowDate.toUTCString();
+
+                var source = 'facefinder';
+                var auth = "hmac id=\"" + SecretId + "\", algorithm=\"hmac-sha1\", headers=\"x-date source\", signature=\"";
+                var signStr = "x-date: " + dateTime + "\n" + "source: " + source;
+
+                var sign = CryptoJS.HmacSHA1(signStr, SecretKey)
+                sign = CryptoJS.enc.Base64.stringify(sign)
+                sign = auth + sign + "\""
+                var header = {"Source": source , "X-Date": dateTime , "Authorization":sign}
+                return header
+            }
+
+            const url = "https://service-190kkpwj-1256376761.sh.apigw.tencentcs.com/release/facefinder";
+
+            var img = new Image();
+            img.onload = function(){
+                console.log('img=', img);
+                canvas.width = img.width;
+                canvas.height = img.height;
+                canvas.style.width = img.width+'px';
+                canvas.style.height = img.height+'px';
+                ctx.drawImage(img, 0, 0);
+            };
+            img.src = "faces.png";
+        </script>
+   </body> 
+</html> 
