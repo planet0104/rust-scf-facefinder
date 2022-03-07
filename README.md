@@ -1,5 +1,5 @@
 # rust-scf-facefinder
-腾讯云函数SCF上的Rust人脸检测
+腾讯云函数SCF Custom Runtime部署Rust人脸检测
 
 <img src="test.png" />
 
